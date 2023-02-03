@@ -172,3 +172,90 @@ def test_flatten_json_unit(spark, f: Callable):
     ]
     assert result_values == expected_values, f"expected {expected_values}, but got {result_values}"
     print("All tests pass! :)")
+
+
+def test_join_transactions_with_stop_transactions_unit(spark, f: Callable):
+    input_stop_transactions_pandas = pd.DataFrame([
+        {
+            'charge_point_id': 'AL1000',
+            'write_timestamp': '2022-10-01T13:23:34.000235+00:00',
+            'action': 'StopTransaction',
+            'meter_stop': 26795,
+            'timestamp': '2022-10-02T15:56:17.000345+00:00',
+            'transaction_id': 1.0,
+            'reason': None,
+            'id_tag': '14902753768387952483',
+            'transaction_data': None
+        }
+    ])
+
+    custom_schema = StructType([
+        StructField("charge_point_id", StringType(), True),
+        StructField("write_timestamp", StringType(), True),
+        StructField("action", StringType(), True),
+        StructField("meter_stop", IntegerType(), True),
+        StructField("timestamp", StringType(), True),
+        StructField("transaction_id", DoubleType(), True),
+        StructField("reason", StringType(), True),
+        StructField("id_tag", StringType(), True),
+        StructField("transaction_data", ArrayType(StringType()), True)
+    ])
+
+    input_stop_transactions_df = spark.createDataFrame(
+        input_stop_transactions_pandas,
+        custom_schema
+    )
+
+    input_transactions_pandas = pd.DataFrame([
+        {
+            "transaction_id": 1,
+            "charge_point_id": "AL1000",
+            "id_tag": "14902753768387952483",
+            "start_timestamp": "2022-10-01T13:23:34.000235+00:00"
+        },
+        {
+            "transaction_id": 2,
+            "charge_point_id": "AL2000",
+            "id_tag": "30452404811183661041",
+            "start_timestamp": "2022-09-23T08:36:22.000254+00:00"
+        },
+    ])
+
+    input_transactions_df = spark.createDataFrame(
+        input_transactions_pandas,
+        StructType([
+            StructField("transaction_id", IntegerType()),
+            StructField("charge_point_id", StringType()),
+            StructField("id_tag", StringType()),
+            StructField("start_timestamp", StringType()),
+        ])
+    )
+
+    result = input_transactions_df.transform(f, input_stop_transactions_df)
+    result.show()
+    result.printSchema()
+
+    result_count = result.count()
+    expected_count = 1
+    assert result_count == expected_count, f"expected {expected_count}, but got {result_count}"
+
+    result_columns = result.columns
+    expected_columns = ["transaction_id", "charge_point_id", "id_tag", "start_timestamp", "meter_stop", "timestamp",
+                        "reason", "transaction_data"]
+    assert result_columns == expected_columns, f"expected {expected_columns}, but got {result_columns}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('transaction_id', IntegerType(), True),
+        StructField('charge_point_id', StringType(), True),
+        StructField('id_tag', StringType(), True),
+        StructField('start_timestamp', StringType(), True),
+        StructField('meter_stop', IntegerType(), True),
+        StructField('timestamp', StringType(), True),
+        StructField('reason', StringType(), True),
+        StructField('transaction_data', ArrayType(StringType(), True), True)]
+    )
+
+    assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
+
+    print("All tests pass! :)")
