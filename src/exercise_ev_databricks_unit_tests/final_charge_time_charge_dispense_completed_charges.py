@@ -106,3 +106,69 @@ def test_convert_stop_transaction_unit(spark, f: Callable):
     assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
 
     print("All tests pass! :)")
+
+def test_flatten_json_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "AL1000",
+            "write_timestamp": "2022-10-01T13:23:34.000235+00:00",
+            "action": "StopTransaction",
+            "body": json.dumps({
+                "meter_stop": 26795,
+                "timestamp": "2022-10-02T15:56:17.000345+00:00",
+                "transaction_id": 1,
+                "reason": None,
+                "id_tag": "14902753768387952483",
+                "transaction_data": None
+            })
+        },
+    ])
+
+    json_schema = StructType([
+        StructField("meter_stop", IntegerType(), True),
+        StructField("timestamp", StringType(), True),
+        StructField("transaction_id", IntegerType(), True),
+        StructField("reason", StringType(), True),
+        StructField("id_tag", StringType(), True),
+        StructField("transaction_data", ArrayType(StringType()), True)
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("write_timestamp", StringType()),
+            StructField("action", StringType()),
+            StructField("body", StringType()),
+        ])
+    ).withColumn("new_body", from_json(col("body"), json_schema))
+
+    result = input_df.transform(f)
+    print("Transformed DF:")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 1
+    assert result_count == expected_count, f"expected expected_count, but got {result_count}"
+
+    result_columns = result.columns
+    expected_columns = ["charge_point_id", "write_timestamp", "action", "meter_stop", "timestamp", "transaction_id",
+                        "reason", "id_tag", "transaction_data"]
+    assert result_columns == expected_columns, f"expected {expected_columns} but got {result_columns}"
+
+    result_values = result.select("*").toPandas().to_dict(orient="records")
+    expected_values = [
+        {
+            'charge_point_id': 'AL1000',
+            'write_timestamp': '2022-10-01T13:23:34.000235+00:00',
+            'action': 'StopTransaction',
+            'meter_stop': 26795,
+            'timestamp': '2022-10-02T15:56:17.000345+00:00',
+            'transaction_id': 1.0,
+            'reason': None,
+            'id_tag': '14902753768387952483',
+            'transaction_data': None
+        }
+    ]
+    assert result_values == expected_values, f"expected {expected_values}, but got {result_values}"
+    print("All tests pass! :)")
