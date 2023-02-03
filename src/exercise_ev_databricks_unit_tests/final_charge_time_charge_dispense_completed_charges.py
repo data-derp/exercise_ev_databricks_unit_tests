@@ -1,5 +1,5 @@
 from typing import Callable
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, ArrayType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, ArrayType, TimestampType
 import pandas as pd
 import json
 from pyspark.sql.functions import col, from_json
@@ -302,5 +302,63 @@ def test_rename_timestamp_to_stop_timestamp_unit(spark, f: Callable):
     expected_columns = ["transaction_id", "charge_point_id", "id_tag", "start_timestamp", "meter_stop",
                         "stop_timestamp", "reason", "transaction_data"]
     assert result_columns == expected_columns, f"expected {expected_columns}, but got {result_columns}"
+
+    print("All tests pass! :)")
+
+
+def test_convert_start_stop_timestamp_to_timestamp_type_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "transaction_id": 1,
+            "charge_point_id": 'AL1000',
+            "id_tag": '14902753768387952483',
+            "start_timestamp": '2022-10-01T13:23:34.000235+00:00',
+            "meter_stop": 26795,
+            "stop_timestamp": '2022-10-02T15:56:17.000345+00:00',
+            "reason": None,
+            "transaction_data": None
+        }
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("transaction_id", IntegerType(), True),
+            StructField("charge_point_id", StringType(), True),
+            StructField("id_tag", StringType(), True),
+            StructField("start_timestamp", StringType(), True),
+            StructField("meter_stop", IntegerType(), True),
+            StructField("stop_timestamp", StringType(), True),
+            StructField("reason", StringType(), True),
+            StructField("transaction_data", ArrayType(StringType(), True), True)
+        ])
+    )
+
+    result = input_df.transform(f)
+    print("Transformed DF:")
+    result.show()
+    result.printSchema()
+
+    result_count = result.count()
+    expected_count = 1
+    assert result_count == expected_count, f"expected {expected_count}, but got {result_count}"
+
+    result_columns = result.columns
+    expected_columns = ["transaction_id", "charge_point_id", "id_tag", "start_timestamp", "meter_stop",
+                        "stop_timestamp", "reason", "transaction_data"]
+    assert result_columns == expected_columns, f"expected {expected_columns}, but got {result_columns}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField("transaction_id", IntegerType(), True),
+        StructField("charge_point_id", StringType(), True),
+        StructField("id_tag", StringType(), True),
+        StructField("start_timestamp", TimestampType(), True),
+        StructField("meter_stop", IntegerType(), True),
+        StructField("stop_timestamp", TimestampType(), True),
+        StructField("reason", StringType(), True),
+        StructField("transaction_data", ArrayType(StringType(), True), True)
+    ])
+    assert result_schema == expected_schema
 
     print("All tests pass! :)")
