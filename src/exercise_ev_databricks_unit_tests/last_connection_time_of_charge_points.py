@@ -166,6 +166,7 @@ def test_cleanup(spark, f: Callable):
 
     print("All tests pass! :)")
 
+
 def test_final(input_df: DataFrame):
     result_count = input_df.count()
     expected_count = 5
