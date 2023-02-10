@@ -1,9 +1,13 @@
 from typing import Callable
 
 from pyspark.sql.types import TimestampType, StructType, StructField, StringType, IntegerType
+from pyspark.sql import DataFrame
 
 import pandas as pd
 from dateutil.parser import parse
+
+from pyspark.sql.types import IntegerType
+from datetime import datetime
 
 
 def test_convert_to_timestamp(spark, f: Callable):
@@ -160,4 +164,28 @@ def test_cleanup(spark, f: Callable):
     expected_columns = ["charge_point_id", "write_timestamp", "action", "body", "converted_timestamp"]
     assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
 
+    print("All tests pass! :)")
+
+def test_final(input_df: DataFrame):
+    result_count = input_df.count()
+    expected_count = 5
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_charge_point_id = [x["charge_point_id"] for x in input_df.select("charge_point_id").collect()]
+    expected_charge_point_id = ['AL1000', 'AL2000', 'AL3000', 'AL4000', 'AL5000']
+    assert result_charge_point_id == expected_charge_point_id, f"Expected {expected_charge_point_id}, but got {result_charge_point_id}"
+
+    result_timestamp = [x.converted_timestamp for x in input_df.select("converted_timestamp").collect()]
+    expected_timestamp = [
+        datetime(2022, 10, 3, 2, 36, 23, 337),
+        datetime(2022, 10, 3, 3, 13, 35, 254),
+        datetime(2022, 12, 11, 8, 7, 47, 236),
+        datetime(2022, 12, 5, 8, 43, 55, 432),
+        datetime(2023, 1, 4, 17, 40, 24, 643631)
+    ]
+    assert result_timestamp == expected_timestamp, f"Expected {expected_timestamp}, but got {result_timestamp}"
+
+    result_columns = input_df.columns
+    expected_columns = ["charge_point_id", "write_timestamp", "action", "body", "converted_timestamp"]
+    assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
     print("All tests pass! :)")
