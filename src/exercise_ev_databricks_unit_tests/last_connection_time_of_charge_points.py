@@ -1,0 +1,163 @@
+from typing import Callable
+
+from pyspark.sql.types import TimestampType, StructType, StructField, StringType, IntegerType
+
+import pandas as pd
+from dateutil.parser import parse
+
+
+def test_convert_to_timestamp(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "AL1000",
+            "write_timestamp": "2022-10-02T15:30:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}"
+        },
+        {
+            "charge_point_id": "AL1000",
+            "write_timestamp": "2022-10-02T15:32:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}"
+        },
+        {
+            "charge_point_id": "AL1000",
+            "write_timestamp": "2022-10-02T15:34:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}"
+        },
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("write_timestamp", StringType()),
+            StructField("action", StringType()),
+            StructField("body", StringType()),
+        ]))
+
+    result = input_df.transform(f)
+
+    print("Transformed DF:")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 3
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_columns = result.columns
+    expected_columns = ["charge_point_id", "write_timestamp", "action", "body", "converted_timestamp"]
+    assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('charge_point_id', StringType(), True),
+        StructField('write_timestamp', StringType(), True),
+        StructField('action', StringType(), True),
+        StructField('body', StringType(), True),
+        StructField('converted_timestamp', TimestampType(), True)
+    ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+
+    print("All tests pass! :)")
+
+
+def test_most_recent_message_of_charge_point(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "AL1000",
+            "write_timestamp": "2022-10-02T15:30:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}",
+            "converted_timestamp": parse("2022-10-02T15:30:17.000345+00:00")
+        },
+        {
+            "charge_point_id": "AL1000",
+            "write_timestamp": "2022-10-02T15:32:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}",
+            "converted_timestamp": parse("2022-10-02T15:32:17.000345+00:00")
+        },
+        {
+            "charge_point_id": "AL2000",
+            "write_timestamp": "2022-10-02T15:34:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}",
+            "converted_timestamp": parse("2022-10-02T15:34:17.000345+00:00"),
+        },
+        {
+            "charge_point_id": "AL2000",
+            "write_timestamp": "2022-10-02T15:36:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}",
+            "converted_timestamp": parse("2022-10-02T15:36:17.000345+00:00"),
+        },
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("write_timestamp", StringType()),
+            StructField("action", StringType()),
+            StructField("body", StringType()),
+            StructField("converted_timestamp", TimestampType()),
+        ]))
+
+    result = input_df.transform(f)
+    print("Transformed Dataframe:")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 2
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_columns = result.columns
+    expected_columns =  ["charge_point_id", "write_timestamp", "action", "body", "converted_timestamp", "rn"]
+    assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
+    print("All tests pass! :)")
+
+
+def test_cleanup(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "AL1000",
+            "write_timestamp": "2022-10-02T15:32:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}",
+            "converted_timestamp": parse("2022-10-02T15:32:17.000345+00:00"),
+            "rn": 1
+        },
+        {
+            "charge_point_id": "AL2000",
+            "write_timestamp": "2022-10-02T15:36:17.000345+00:00",
+            "action": "Heartbeat",
+            "body": "{}",
+            "converted_timestamp": parse("2022-10-02T15:36:17.000345+00:00"),
+            "rn": 1
+        },
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("write_timestamp", StringType()),
+            StructField("action", StringType()),
+            StructField("body", StringType()),
+            StructField("converted_timestamp", TimestampType()),
+            StructField("rn", IntegerType())
+        ]))
+
+    result = input_df.transform(f)
+
+    result_count = result.count()
+    expected_count = 2
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_columns = result.columns
+    expected_columns = ["charge_point_id", "write_timestamp", "action", "body", "converted_timestamp"]
+    assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
+
+    print("All tests pass! :)")
