@@ -64,6 +64,8 @@ def test_convert_to_timestamp(spark, f: Callable):
 
     result_schema = result.schema
     expected_schema = StructType([
+        StructField('message_id', StringType(), True),
+        StructField('message_type', StringType(), True),
         StructField('charge_point_id', StringType(), True),
         StructField('write_timestamp', StringType(), True),
         StructField('action', StringType(), True),
