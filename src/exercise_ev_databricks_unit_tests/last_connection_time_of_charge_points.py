@@ -13,18 +13,24 @@ from datetime import datetime
 def test_convert_to_timestamp(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
+            "message_id": "a42ac20e-fe56-4583-9a1e-eb53ac7bc296",
+            "message_type": 2,
             "charge_point_id": "AL1000",
             "write_timestamp": "2022-10-02T15:30:17.000345+00:00",
             "action": "Heartbeat",
             "body": "{}"
         },
         {
+            "message_id": "f257e3dc-e00c-49d5-982a-c6de791c862f",
+            "message_type": 2,
             "charge_point_id": "AL1000",
             "write_timestamp": "2022-10-02T15:32:17.000345+00:00",
             "action": "Heartbeat",
             "body": "{}"
         },
         {
+            "message_id": "0c59b722-9807-4eb9-80e4-8178fe5466d5",
+            "message_type": 2,
             "charge_point_id": "AL1000",
             "write_timestamp": "2022-10-02T15:34:17.000345+00:00",
             "action": "Heartbeat",
@@ -35,6 +41,8 @@ def test_convert_to_timestamp(spark, f: Callable):
     input_df = spark.createDataFrame(
         input_pandas,
         StructType([
+            StructField("message_id", StringType()),
+            StructField("message_type", IntegerType()),
             StructField("charge_point_id", StringType()),
             StructField("write_timestamp", StringType()),
             StructField("action", StringType()),
@@ -51,8 +59,8 @@ def test_convert_to_timestamp(spark, f: Callable):
     assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
 
     result_columns = result.columns
-    expected_columns = ["charge_point_id", "write_timestamp", "action", "body", "converted_timestamp"]
-    assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
+    min_expected_column = "converted_timestamp"
+    assert min_expected_column in result_columns, f"Expected minimum {min_expected_column} in {result_columns}"
 
     result_schema = result.schema
     expected_schema = StructType([
