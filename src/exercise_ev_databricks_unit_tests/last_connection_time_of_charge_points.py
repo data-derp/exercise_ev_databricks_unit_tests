@@ -183,25 +183,32 @@ def test_final(input_df: DataFrame):
     assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
 
     result_charge_point_id = [x["charge_point_id"] for x in input_df.select("charge_point_id").collect()]
-    expected_charge_point_id = ['0e8cc706-f347-451a-8673-910a80ae3a07', '19bb27a6-b6f3-4ab6-941a-a0773b795651',
-                                '1fd69c09-9d43-4bda-9fed-72ef670b02f0', '259b681d-73ad-4d8f-8f0a-73b451c0f9d1',
-                                '8186ad01-70b6-4f7d-9220-7b02e4fd8177', '8e80b53d-1f8b-4e42-a689-c41f001cdb38',
-                                'ba11a3c6-33fb-448b-afee-56f6ab143ba0', 'c71e9fb1-288a-4ba2-b820-738017d094c8',
-                                'd5f4e9c5-c6cb-4f2f-a1c7-21cbe68098b0', 'de9f4da4-3ec7-4cbb-a290-68ca4abab2b7']
+    expected_charge_point_id = [
+        '0f6989c0-2bed-45b7-86e1-c956abfb6cff',
+        '111713e6-4291-41a8-ac04-d51e2a4f65d7',
+        '240f1d92-8383-446f-8887-82ac71732fb9',
+        '38e85852-2c43-4c71-bbe5-3f656e25a20c',
+        '5366cb82-e350-4f79-ad5d-9e2b446706cc',
+        '8eb888ca-e491-4c2e-a8ce-7b91306924cd',
+        '90e077f6-0a92-4c92-8c66-96c326935d47',
+        'a1a62472-88bc-4495-a639-f2217394f4d0',
+        'cf6ba6fb-1f8f-4194-a25b-fd2477f80862',
+        'dcb75c05-903c-4ed9-b44a-8b3a96dab4d4'
+    ]
     assert result_charge_point_id == expected_charge_point_id, f"Expected {expected_charge_point_id}, but got {result_charge_point_id}"
 
     result_timestamp = [x.converted_timestamp for x in input_df.select("converted_timestamp").collect()]
     expected_timestamp = [
-        datetime(2023, 1, 6, 22, 58, 32, 59),
-        datetime(2023, 1, 6, 23, 13, 32, 11),
-        datetime(2023, 1, 6, 22, 59, 34, 50),
-        datetime(2023, 1, 6, 23, 51, 48, 6),
-        datetime(2023, 1, 6, 22, 59, 51, 45),
-        datetime(2023, 1, 6, 23, 39, 13, 21),
-        datetime(2023, 1, 6, 23, 23, 30, 41),
-        datetime(2023, 1, 6, 23, 40, 8, 36),
-        datetime(2023, 1, 6, 23, 11, 31, 40),
-        datetime(2023, 1, 6, 23, 24, 18, 9)
+        datetime(2023, 1, 6, 23, 37, 7, 5),
+        datetime(2023, 1, 6, 23, 37, 50, 6),
+        datetime(2023, 1, 6, 23, 1, 23, 27),
+        datetime(2023, 1, 6, 23, 57, 37, 25),
+        datetime(2023, 1, 6, 23, 52, 30, 13),
+        datetime(2023, 1, 6, 23, 47, 59, 3),
+        datetime(2023, 1, 6, 23, 20, 37, 25),
+        datetime(2023, 1, 6, 23, 34, 44, 42),
+        datetime(2023, 1, 6, 23, 8, 9, 38),
+        datetime(2023, 1, 6, 23, 36, 16, 1)
     ]
     assert result_timestamp == expected_timestamp, f"Expected {expected_timestamp}, but got {result_timestamp}"
 
