@@ -399,7 +399,56 @@ def test_join_stop_with_start_unit(spark, f: Callable):
 
     print("All tests pass! :)")
 
+def test_calculate_total_time_hours_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": '123',
+            "transaction_id": 1,
+            "meter_start": 0,
+            "meter_stop": 1000,
+            "start_timestamp": datetime.fromisoformat("2023-01-01T08:00:00+00:00"),
+            "stop_timestamp": datetime.fromisoformat("2023-01-01T09:00:00+00:00"),
+        }
+    ])
 
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType(), True),
+            StructField("transaction_id", IntegerType(), True),
+            StructField("meter_start", IntegerType(), True),
+            StructField("meter_stop", IntegerType(), True),
+            StructField("start_timestamp", TimestampType(), True),
+            StructField("stop_timestamp", TimestampType(), True),
+        ])
+    )
+
+    result = input_df.transform(f)
+    print("Transformed DF:")
+    result.show()
+    result.printSchema()
+
+    result_count = result.count()
+    expected_count = 1
+    assert result_count == expected_count, f"expected {expected_count}, but got {result_count}"
+
+    result_values = result.toPandas().to_dict(orient="records")
+    expected_values = [{
+        "charge_point_id": '123',
+        "transaction_id": 1,
+        "meter_start": 0,
+        "meter_stop": 1000,
+        "start_timestamp": Timestamp('2023-01-01 08:00:00.000000'),
+        "stop_timestamp": Timestamp('2023-01-01 09:00:00.000000'),
+        "total_time": 1.0
+    }]
+    assert result_values == expected_values, f"expected {expected_values}, but got {result_values}"
+
+    result_total_time = [x.total_time for x in result.collect()]
+    expected_total_time = [1.0]
+    assert result_total_time == expected_total_time, f"expected {expected_total_time}, but got {result_total_time}"
+
+    print("All tests pass! :)")
 
 def test_flatten_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
@@ -604,7 +653,7 @@ def test_convert_start_stop_timestamp_to_timestamp_type_unit(spark, f: Callable)
     input_pandas = pd.DataFrame([
         {
             "transaction_id": 1,
-            "charge_point_id": 'AL1000',
+            "charge_point_id": '123',
             "meter_start": 0,
             "meter_stop": 1000,
             "start_timestamp": '2022-10-01T13:23:34.000235+00:00',
@@ -651,63 +700,6 @@ def test_convert_start_stop_timestamp_to_timestamp_type_unit(spark, f: Callable)
 
     print("All tests pass! :)")
 
-
-def test_calculate_charge_duration_minutes_unit(spark, f: Callable):
-    input_pandas = pd.DataFrame([
-        {
-            "transaction_id": 1,
-            "charge_point_id": 'AL1000',
-            "id_tag": '14902753768387952483',
-            "start_timestamp": datetime.fromisoformat("2022-10-01T13:23:34.000235+00:00"),
-            "meter_stop": 26795,
-            "stop_timestamp": datetime.fromisoformat("2022-10-02T15:56:17.000345+00:00"),
-            "reason": None,
-            "transaction_data": None
-        }
-    ])
-
-    input_df = spark.createDataFrame(
-        input_pandas,
-        StructType([
-            StructField("transaction_id", IntegerType(), True),
-            StructField("charge_point_id", StringType(), True),
-            StructField("id_tag", StringType(), True),
-            StructField("start_timestamp", TimestampType(), True),
-            StructField("meter_stop", IntegerType(), True),
-            StructField("stop_timestamp", TimestampType(), True),
-            StructField("reason", StringType(), True),
-            StructField("transaction_data", ArrayType(StringType(), True), True)
-        ])
-    )
-
-    result = input_df.transform(f)
-    print("Transformed DF:")
-    result.show()
-    result.printSchema()
-
-    result_count = result.count()
-    expected_count = 1
-    assert result_count == expected_count, f"expected {expected_count}, but got {result_count}"
-
-    result_values = result.toPandas().to_dict(orient="records")
-    expected_values = [{
-        "transaction_id": 1,
-        "charge_point_id": 'AL1000',
-        "id_tag": '14902753768387952483',
-        "start_timestamp": Timestamp('2022-10-01 13:23:34.000235'),
-        "meter_stop": 26795,
-        "stop_timestamp": Timestamp('2022-10-02 15:56:17.000345'),
-        "reason": None,
-        "transaction_data": None,
-        "charge_duration_minutes": 1592.72
-    }]
-    assert result_values == expected_values, f"expected {expected_values}, but got {result_values}"
-
-    result_charge_duration_minutes = [x.charge_duration_minutes for x in result.collect()]
-    expected_charge_duration_minutes = [1592.72]
-    assert result_charge_duration_minutes == expected_charge_duration_minutes, f"expected {expected_charge_duration_minutes}, but got {result_charge_duration_minutes}"
-
-    print("All tests pass! :)")
 
 
 def test_cleanup_extra_columns_unit(spark, f: Callable):
