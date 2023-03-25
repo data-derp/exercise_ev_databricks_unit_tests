@@ -232,7 +232,95 @@ def test_convert_start_transaction_response_json_unit(spark, f: Callable):
 
     print("All tests pass! :)")
 
+def test_join_with_start_transaction_request_unit(spark, f: Callable):
+    input_start_transaction_response = pd.DataFrame([
+        {
+            "charge_point_id": "123",
+            "message_id": "456",
+            "body": json.dumps({
+                "transaction_id": 1,
+                "id_tag_info": {
+                    "status": "Accepted",
+                    "parent_id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
+                    "expiry_date": None
+                }
+            })
+        },
+    ])
 
+    input_start_transaction_response_df = spark.createDataFrame(
+        input_start_transaction_response,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("message_id", StringType()),
+            StructField("body", StringType()),
+        ])
+    )
+
+    input_start_transaction_response_body_id_tag_info_schema = StructType([
+        StructField("status", StringType(), True),
+        StructField("parent_id_tag", StringType(), True),
+        StructField("expiry_date", StringType(), True),
+    ])
+
+    input_start_transaction_response_body_schema = StructType([
+        StructField("transaction_id", IntegerType(), True),
+        StructField("id_tag_info", input_start_transaction_response_body_id_tag_info_schema, True)
+    ])
+
+    input_start_transaction_response_converted_df = input_start_transaction_response_df.withColumn("new_body",from_json(col("body"), input_start_transaction_response_body_schema))
+
+
+    input_start_transaction_request_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "123",
+            "message_id": "456",
+            "body": json.dumps({
+                "connector_id": 1,
+                "id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
+                "meter_start": 0,
+                "timestamp": "2022-01-01T08:00:00+00:00",
+                "reservation_id": None
+            })
+        },
+    ])
+
+    input_start_transaction_request_df = spark.createDataFrame(
+        input_start_transaction_request_pandas,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("message_id", StringType()),
+            StructField("body", StringType()),
+        ])
+    )
+
+    input_start_transaction_request_body_schema = StructType([
+        StructField("connector_id", IntegerType(), True),
+        StructField("id_tag", StringType(), True),
+        StructField("meter_start", IntegerType(), True),
+        StructField("timestamp", StringType(), True),
+        StructField("reservation_id", IntegerType(), True),
+    ])
+
+    input_start_transaction_request_converted_df = input_start_transaction_request_df.withColumn("new_body",from_json(col("body"), input_start_transaction_request_body_schema))
+
+    result = input_start_transaction_response_converted_df.transform(f, input_start_transaction_request_converted_df)
+
+    print("Transformed DF:")
+    result.show()
+
+    result_count = result.count()
+    assert result_count == 1
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('charge_point_id', StringType(), True),
+        StructField('transaction_id', IntegerType(), True),
+        StructField('meter_start', IntegerType(), True),
+        StructField('start_timestamp', StringType(), True),
+    ])
+    assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
+
+    print("All tests pass! :)")
 
 def test_flatten_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
