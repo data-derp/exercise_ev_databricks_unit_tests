@@ -110,6 +110,67 @@ def test_convert_stop_transaction_unit(spark, f: Callable):
 
     print("All tests pass! :)")
 
+def test_convert_start_transaction_request_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "foo": "30e2ed0c-dd61-4fc1-bcb8-f0a8a0f87c0a",
+            "body": json.dumps({
+                "connector_id": 1,
+                "id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
+                "meter_start": 0,
+                "timestamp": "2022-01-01T08:00:00+00:00",
+                "reservation_id": None
+            })
+        },
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("foo", StringType()),
+            StructField("body", StringType()),
+        ])
+    )
+
+    result = input_df.transform(f)
+
+    print("Transformed DF:")
+    result.show()
+
+    result_count = result.count()
+    assert result_count == 1
+
+    def get_json_value(df: DataFrame, column: str, key: str):
+        return [getattr(x, key) for x in df.select(col(f"{column}.{key}")).collect()][0]
+
+    assert get_json_value(result, "new_body",
+                          "connector_id") == 1, f"expected 0, but got {get_json_value(result, 'new_body', 'connector_id')}"
+    assert get_json_value(result, "new_body",
+                          "id_tag") == "ea068c10-1bfb-4128-ab88-de565bd5f02f", f"expected 'ea068c10-1bfb-4128-ab88-de565bd5f02f', but got {get_json_value(result, 'new_body', 'id_tag')}"
+    assert get_json_value(result, "new_body",
+                          "meter_start") == 0, f"expected 0, but got {get_json_value(result, 'new_body', 'meter_start')}"
+    assert get_json_value(result, "new_body",
+                          "timestamp") == "2022-01-01T08:00:00+00:00", f"expected '2022-01-01T08:00:00+00:00', but got {get_json_value(result, 'new_body', 'timestamp')}"
+    assert get_json_value(result, "new_body",
+                          "reservation_id") == None, f"expected 1, but got {get_json_value(result, 'new_body', 'reservation_id')}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('foo', StringType(), True),
+        StructField('body', StringType(), True),
+        StructField('new_body',
+                    StructType([
+                        StructField('connector_id', IntegerType(), True),
+                        StructField('id_tag', StringType(), True),
+                        StructField('meter_start', IntegerType(), True),
+                        StructField('timestamp', StringType(), True),
+                        StructField('reservation_id', IntegerType(), True)]),
+                    True)
+    ])
+    assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
+
+    print("All tests pass! :)")
+
 def test_convert_start_transaction_response_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
