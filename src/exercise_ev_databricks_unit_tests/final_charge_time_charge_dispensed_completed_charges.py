@@ -450,6 +450,60 @@ def test_calculate_total_time_hours_unit(spark, f: Callable):
 
     print("All tests pass! :)")
 
+def test_calculate_total_energy_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": '123',
+            "transaction_id": 1,
+            "meter_start": 0,
+            "meter_stop": 1000,
+            "start_timestamp": Timestamp('2023-01-01 08:00:00.000000'),
+            "stop_timestamp": Timestamp('2023-01-01 09:00:00.000000'),
+            "total_time": 1.0
+        }
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType(), True),
+            StructField("transaction_id", IntegerType(), True),
+            StructField("meter_start", IntegerType(), True),
+            StructField("meter_stop", IntegerType(), True),
+            StructField("start_timestamp", TimestampType(), True),
+            StructField("stop_timestamp", TimestampType(), True),
+            StructField("total_time", DoubleType(), True),
+        ])
+    )
+
+    result = input_df.transform(f)
+    print("Transformed DF:")
+    result.show()
+    result.printSchema()
+
+    result_count = result.count()
+    expected_count = 1
+    assert result_count == expected_count, f"expected {expected_count}, but got {result_count}"
+
+    result_values = result.toPandas().to_dict(orient="records")
+    expected_values = [{
+        "charge_point_id": '123',
+        "transaction_id": 1,
+        "meter_start": 0,
+        "meter_stop": 1000,
+        "start_timestamp": Timestamp('2023-01-01 08:00:00.000000'),
+        "stop_timestamp": Timestamp('2023-01-01 09:00:00.000000'),
+        "total_time": 1.0,
+        "total_energy": 1000.0
+    }]
+    assert result_values == expected_values, f"expected {expected_values}, but got {result_values}"
+
+    result_total_energy = [x.total_energy for x in result.collect()]
+    expect_total_energy = [1000.0]
+    assert result_total_energy == expect_total_energy, f"expected {expect_total_energy}, but got {result_total_energy}"
+
+    print("All tests pass! :)")
+
 def test_flatten_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
