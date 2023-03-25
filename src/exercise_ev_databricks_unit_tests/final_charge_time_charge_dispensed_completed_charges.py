@@ -76,66 +76,66 @@ def test_convert_stop_transaction_unit(spark, f: Callable):
     result_count = result.count()
     assert result_count == 1
 
-    def test_convert_start_transaction_response_json_unit(spark, f: Callable):
-        input_pandas = pd.DataFrame([
-            {
-                "foo": "30e2ed0c-dd61-4fc1-bcb8-f0a8a0f87c0a",
-                "body": json.dumps({
-                    "transaction_id": 1,
-                    "id_tag_info": {
-                        "status": "Accepted",
-                        "parent_id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
-                        "expiry_date": None
-                    }
-                })
-            },
+def test_convert_start_transaction_response_json_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "foo": "30e2ed0c-dd61-4fc1-bcb8-f0a8a0f87c0a",
+            "body": json.dumps({
+                "transaction_id": 1,
+                "id_tag_info": {
+                    "status": "Accepted",
+                    "parent_id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
+                    "expiry_date": None
+                }
+            })
+        },
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("foo", StringType()),
+            StructField("body", StringType()),
         ])
+    )
 
-        input_df = spark.createDataFrame(
-            input_pandas,
-            StructType([
-                StructField("foo", StringType()),
-                StructField("body", StringType()),
-            ])
-        )
+    result = input_df.transform(f)
 
-        result = input_df.transform(f)
+    print("Transformed DF:")
+    result.show()
 
-        print("Transformed DF:")
-        result.show()
+    result_count = result.count()
+    assert result_count == 1
 
-        result_count = result.count()
-        assert result_count == 1
+    def get_json_value(df: DataFrame, column: str, key: str):
+        return [getattr(x, key) for x in df.select(col(f"{column}.{key}")).collect()][0]
 
-        def get_json_value(df: DataFrame, column: str, key: str):
-            return [getattr(x, key) for x in df.select(col(f"{column}.{key}")).collect()][0]
+    assert get_json_value(result, "new_body",
+                          "transaction_id") == 1, f"expected 1, but got {get_json_value(result, 'new_body', 'transaction_id')}"
+    assert get_json_value(result, "new_body",
+                          "id_tag_info") == Row(status='Accepted',
+                                                parent_id_tag='ea068c10-1bfb-4128-ab88-de565bd5f02f',
+                                                expiry_date=None), f"expected None, but got {get_json_value(result, 'new_body', 'id_tag_info')}"
 
-        assert get_json_value(result, "new_body",
-                              "transaction_id") == 1, f"expected 1, but got {get_json_value(result, 'new_body', 'transaction_id')}"
-        assert get_json_value(result, "new_body",
-                              "id_tag_info") == Row(status='Accepted',
-                                                    parent_id_tag='ea068c10-1bfb-4128-ab88-de565bd5f02f',
-                                                    expiry_date=None), f"expected None, but got {get_json_value(result, 'new_body', 'id_tag_info')}"
+    result_schema = result.schema
+    id_tag_info_schema = StructType([
+        StructField('status', StringType(), True),
+        StructField('parent_id_tag', StringType(), True),
+        StructField('expiry_date', StringType(), True),
+    ])
+    expected_schema = StructType([
+        StructField('foo', StringType(), True),
+        StructField('body', StringType(), True),
+        StructField('new_body',
+                    StructType([
+                        StructField('transaction_id', IntegerType(), True),
+                        StructField('id_tag_info', id_tag_info_schema, True),
+                    ]),
+                    True)
+    ])
+    assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
 
-        result_schema = result.schema
-        id_tag_info_schema = StructType([
-            StructField('status', StringType(), True),
-            StructField('parent_id_tag', StringType(), True),
-            StructField('expiry_date', StringType(), True),
-        ])
-        expected_schema = StructType([
-            StructField('foo', StringType(), True),
-            StructField('body', StringType(), True),
-            StructField('new_body',
-                        StructType([
-                            StructField('transaction_id', IntegerType(), True),
-                            StructField('id_tag_info', id_tag_info_schema, True),
-                        ]),
-                        True)
-        ])
-        assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
-
-        print("All tests pass! :)")
+    print("All tests pass! :)")
 
     def get_json_value(df: DataFrame, column: str, key: str):
         return [getattr(x, key) for x in df.select(col(f"{column}.{key}")).collect()][0]
