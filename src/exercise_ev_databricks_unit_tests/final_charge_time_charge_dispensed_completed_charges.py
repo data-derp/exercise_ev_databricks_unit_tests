@@ -76,6 +76,40 @@ def test_convert_stop_transaction_unit(spark, f: Callable):
     result_count = result.count()
     assert result_count == 1
 
+    def get_json_value(df: DataFrame, column: str, key: str):
+        return [getattr(x, key) for x in df.select(col(f"{column}.{key}")).collect()][0]
+
+    assert get_json_value(result, "new_body",
+                          "meter_stop") == 26795, f"expected 26795, but got {get_json_value(result, 'new_body', 'meter_stop')}"
+    assert get_json_value(result, "new_body",
+                          "timestamp") == "2022-10-02T15:56:17.000345+00:00", f"expected '2022-10-02T15:56:17.000345+00:00', but got {get_json_value(result, 'new_body', 'timestamp')}"
+    assert get_json_value(result, "new_body",
+                          "transaction_id") == 1, f"expected 1, but got {get_json_value(result, 'new_body', 'transaction_id')}"
+    assert get_json_value(result, "new_body",
+                          "reason") == None, f"expected None, but got {get_json_value(result, 'new_body', 'reason')}"
+    assert get_json_value(result, "new_body",
+                          "id_tag") == "14902753768387952483", f"expected '14902753768387952483', but got {get_json_value(result, 'new_body', 'id_tag')}"
+    assert get_json_value(result, "new_body",
+                          "transaction_data") == None, f"expected None, but got {get_json_value(result, 'new_body', 'transaction_data')}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('foo', StringType(), True),
+        StructField('body', StringType(), True),
+        StructField('new_body',
+                    StructType([
+                        StructField('meter_stop', IntegerType(), True),
+                        StructField('timestamp', StringType(), True),
+                        StructField('transaction_id', IntegerType(), True),
+                        StructField('reason', StringType(), True),
+                        StructField('id_tag', StringType(), True),
+                        StructField('transaction_data', ArrayType(StringType(), True), True)]),
+                    True)
+    ])
+    assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
+
+    print("All tests pass! :)")
+
 def test_convert_start_transaction_response_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
@@ -137,39 +171,7 @@ def test_convert_start_transaction_response_json_unit(spark, f: Callable):
 
     print("All tests pass! :)")
 
-    def get_json_value(df: DataFrame, column: str, key: str):
-        return [getattr(x, key) for x in df.select(col(f"{column}.{key}")).collect()][0]
 
-    assert get_json_value(result, "new_body",
-                          "meter_stop") == 26795, f"expected 26795, but got {get_json_value(result, 'new_body', 'meter_stop')}"
-    assert get_json_value(result, "new_body",
-                          "timestamp") == "2022-10-02T15:56:17.000345+00:00", f"expected '2022-10-02T15:56:17.000345+00:00', but got {get_json_value(result, 'new_body', 'timestamp')}"
-    assert get_json_value(result, "new_body",
-                          "transaction_id") == 1, f"expected 1, but got {get_json_value(result, 'new_body', 'transaction_id')}"
-    assert get_json_value(result, "new_body",
-                          "reason") == None, f"expected None, but got {get_json_value(result, 'new_body', 'reason')}"
-    assert get_json_value(result, "new_body",
-                          "id_tag") == "14902753768387952483", f"expected '14902753768387952483', but got {get_json_value(result, 'new_body', 'id_tag')}"
-    assert get_json_value(result, "new_body",
-                          "transaction_data") == None, f"expected None, but got {get_json_value(result, 'new_body', 'transaction_data')}"
-
-    result_schema = result.schema
-    expected_schema = StructType([
-        StructField('foo', StringType(), True),
-        StructField('body', StringType(), True),
-        StructField('new_body',
-                    StructType([
-                        StructField('meter_stop', IntegerType(), True),
-                        StructField('timestamp', StringType(), True),
-                        StructField('transaction_id', IntegerType(), True),
-                        StructField('reason', StringType(), True),
-                        StructField('id_tag', StringType(), True),
-                        StructField('transaction_data', ArrayType(StringType(), True), True)]),
-                    True)
-    ])
-    assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
-
-    print("All tests pass! :)")
 
 def test_flatten_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
