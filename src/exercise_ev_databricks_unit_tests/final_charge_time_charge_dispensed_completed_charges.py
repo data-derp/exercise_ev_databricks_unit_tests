@@ -7,6 +7,7 @@ from pyspark.sql import DataFrame
 from datetime import datetime
 from pandas import Timestamp
 from pyspark.sql import Row
+from dateutil import parser
 
 
 def test_return_stop_transaction_unit(spark, f: Callable):
@@ -860,7 +861,7 @@ def test_convert_metervalues_to_json_unit(spark, f: Callable):
 
     print("All tests passed! :)")
 
-def test_reshape_meter_values(spark, f: Callable):
+def test_reshape_meter_values_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
             "charge_point_id": "AL1000",
@@ -901,12 +902,141 @@ def test_reshape_meter_values(spark, f: Callable):
     assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
 
     result_columns = set(result.columns)
-    expected_columns = set(["transaction_id", "timestamp", "measurand", "phase", "value"])
+    expected_columns = {"transaction_id", "timestamp", "measurand", "phase", "value"}
     assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
 
     result_value = [x.value for x in result.collect()]
     expected_value = [1330]
     assert result_value == expected_value, f"Expected {expected_value}, but got {result_value}"
+
+
+def test_calculate_total_parking_time_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "transaction_id": 1,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 1.0,
+            "timestamp": parser.parse("2023-01-01T09:00:00Z")
+        },
+        {
+            "transaction_id": 1,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 1.0,
+            "timestamp": parser.parse("2023-01-01T09:05:00Z")
+        },
+        {
+            "transaction_id": 1,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 1.0,
+            "timestamp": parser.parse("2023-01-01T09:10:00Z")
+        },
+        {
+            "transaction_id": 1,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 0.0,
+            "timestamp": parser.parse("2023-01-01T09:15:00Z")
+        },
+        {
+            "transaction_id": 1,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 0.0,
+            "timestamp": parser.parse("2023-01-01T09:20:00Z")
+        },
+        {
+            "transaction_id": 1,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 0.0,
+            "timestamp": parser.parse("2023-01-01T09:25:00Z")
+        },
+        {
+            "transaction_id": 2,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 2.0,
+            "timestamp": parser.parse("2023-01-01T09:00:00Z")
+        },
+        {
+            "transaction_id": 2,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 2.0,
+            "timestamp": parser.parse("2023-01-01T09:05:00Z")
+        },
+        {
+            "transaction_id": 2,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 2.0,
+            "timestamp": parser.parse("2023-01-01T09:10:00Z")
+        },
+        {
+            "transaction_id": 2,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 0.0,
+            "timestamp": parser.parse("2023-01-01T09:15:00Z")
+        },
+        {
+            "transaction_id": 2,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 0.0,
+            "timestamp": parser.parse("2023-01-01T09:20:00Z")
+        },
+        {
+            "transaction_id": 2,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 0.0,
+            "timestamp": parser.parse("2023-01-01T09:25:00Z")
+        },
+        {
+            "transaction_id": 2,
+            "measurand": "Power.Active.Import",
+            "phase": None,
+            "value": 0.0,
+            "timestamp": parser.parse("2023-01-01T09:30:00Z")
+        },
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("transaction_id", IntegerType(), True),
+            StructField("measurand", StringType(), True),
+            StructField("phase", StringType(), True),
+            StructField("value", DoubleType(), True),
+            StructField("timestamp", TimestampType(), True),
+        ])
+    )
+
+    print("Transformed DF:")
+    result = input_df.transform(f)
+    result.show()
+
+    result_count = result.count()
+    expected_count = 2
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    def assert_expected_value(df: DataFrame, column_name: str, expected_values: List[Any]):
+        r = [getattr(x, column_name) for x in df.collect()]
+        assert r == expected_values, f"Expected {expected_values}, but got {r}"
+
+    assert_expected_value(result, "transaction_id", [1, 2])
+    assert_expected_value(result, "total_parking_time", [0.17, 0.25])
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('transaction_id', IntegerType(), True),
+        StructField('total_parking_time', DoubleType(), True)
+    ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
 
 def test_flatten_metervalues_json_unit(spark, f: Callable):
