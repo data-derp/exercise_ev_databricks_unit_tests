@@ -1042,82 +1042,61 @@ def test_calculate_total_parking_time_unit(spark, f: Callable):
     ])
     assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
-    def test_join_with_target_df_unit(spark, f: Callable):
-        join_df_pandas = pd.DataFrame([
-            {
-                "transaction_id": 1,
-                "total_parking_time": 0.1
-            },
-            {
-                "transaction_id": 3,
-                "total_parking_time": 0.2
-            }
+def test_join_with_target_df_unit(spark, f: Callable):
+    join_df_pandas = pd.DataFrame([
+        {
+            "transaction_id": 1,
+            "total_parking_time": 0.1
+        },
+        {
+            "transaction_id": 3,
+            "total_parking_time": 0.2
+        }
+    ])
+
+    join_df = spark.createDataFrame(
+        join_df_pandas,
+        StructType([
+            StructField("transaction_id", IntegerType(), True),
+            StructField("total_parking_time", DoubleType(), True),
         ])
+    )
 
-        join_df = spark.createDataFrame(
-            join_df_pandas,
-            StructType([
-                StructField("transaction_id", IntegerType(), True),
-                StructField("total_parking_time", DoubleType(), True),
-            ])
-        )
-
-        input_df_pandas = pd.DataFrame([
-            {
-                "charge_point_id": "123",
-                "transaction_id": 1,
-                "meter_start": 0,
-                "meter_stop": 100,
-                "start_timestamp": parser.parse("2023-01-01T09:00:00Z"),
-                "stop_timestamp": parser.parse("2023-01-01T09:30:00Z"),
-                "total_time": 0.5,
-                "total_energy": 100,
-            },
-            {
-                "charge_point_id": "123",
-                "transaction_id": 2,
-                "meter_start": 0,
-                "meter_stop": 200,
-                "start_timestamp": parser.parse("2023-01-01T09:00:00Z"),
-                "stop_timestamp": parser.parse("2023-01-01T09:30:00Z"),
-                "total_time": 0.5,
-                "total_energy": 200,
-            },
-            {
-                "charge_point_id": "123",
-                "transaction_id": 3,
-                "meter_start": 0,
-                "meter_stop": 300,
-                "start_timestamp": parser.parse("2023-01-01T09:00:00Z"),
-                "stop_timestamp": parser.parse("2023-01-01T09:30:00Z"),
-                "total_time": 0.5,
-                "total_energy": 300,
-            }
-        ])
-        input_df = spark.createDataFrame(
-            input_df_pandas,
-            StructType([
-                StructField("charge_point_id", StringType(), True),
-                StructField("transaction_id", IntegerType(), True),
-                StructField("meter_start", IntegerType(), True),
-                StructField("meter_stop", IntegerType(), True),
-                StructField("start_timestamp", TimestampType(), True),
-                StructField("stop_timestamp", TimestampType(), True),
-                StructField("total_time", DoubleType(), True),
-                StructField("total_energy", DoubleType(), True),
-            ])
-        )
-
-        result = input_df.transform(f, join_df)
-        print("Transformed DF:")
-        result.show()
-
-        result_count = result.count()
-        expected_count = 3
-        assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
-
-        result_schema = result.schema
-        expected_schema = StructType([
+    input_df_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "123",
+            "transaction_id": 1,
+            "meter_start": 0,
+            "meter_stop": 100,
+            "start_timestamp": parser.parse("2023-01-01T09:00:00Z"),
+            "stop_timestamp": parser.parse("2023-01-01T09:30:00Z"),
+            "total_time": 0.5,
+            "total_energy": 100,
+        },
+        {
+            "charge_point_id": "123",
+            "transaction_id": 2,
+            "meter_start": 0,
+            "meter_stop": 200,
+            "start_timestamp": parser.parse("2023-01-01T09:00:00Z"),
+            "stop_timestamp": parser.parse("2023-01-01T09:30:00Z"),
+            "total_time": 0.5,
+            "total_energy": 200,
+        },
+        {
+            "charge_point_id": "123",
+            "transaction_id": 3,
+            "meter_start": 0,
+            "meter_stop": 300,
+            "start_timestamp": parser.parse("2023-01-01T09:00:00Z"),
+            "stop_timestamp": parser.parse("2023-01-01T09:30:00Z"),
+            "total_time": 0.5,
+            "total_energy": 300,
+        }
+    ])
+    input_df = spark.createDataFrame(
+        input_df_pandas,
+        StructType([
             StructField("charge_point_id", StringType(), True),
             StructField("transaction_id", IntegerType(), True),
             StructField("meter_start", IntegerType(), True),
@@ -1126,15 +1105,36 @@ def test_calculate_total_parking_time_unit(spark, f: Callable):
             StructField("stop_timestamp", TimestampType(), True),
             StructField("total_time", DoubleType(), True),
             StructField("total_energy", DoubleType(), True),
-            StructField("total_parking_time", DoubleType(), True),
         ])
-        assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+    )
 
-        result_total_parking_time = [x.total_parking_time for x in result.collect()]
-        expected_total_parking_time = [0.1, None, 0.2]
-        assert result_total_parking_time == expected_total_parking_time, f"Expected {expected_total_parking_time}, but got {result_total_parking_time}"
+    result = input_df.transform(f, join_df)
+    print("Transformed DF:")
+    result.show()
 
-        print("All tests pass! :)")
+    result_count = result.count()
+    expected_count = 3
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField("charge_point_id", StringType(), True),
+        StructField("transaction_id", IntegerType(), True),
+        StructField("meter_start", IntegerType(), True),
+        StructField("meter_stop", IntegerType(), True),
+        StructField("start_timestamp", TimestampType(), True),
+        StructField("stop_timestamp", TimestampType(), True),
+        StructField("total_time", DoubleType(), True),
+        StructField("total_energy", DoubleType(), True),
+        StructField("total_parking_time", DoubleType(), True),
+    ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+
+    result_total_parking_time = [x.total_parking_time for x in result.collect()]
+    expected_total_parking_time = [0.1, None, 0.2]
+    assert result_total_parking_time == expected_total_parking_time, f"Expected {expected_total_parking_time}, but got {result_total_parking_time}"
+
+    print("All tests pass! :)")
 
 def test_cleanup_columns_unit(spark, f: Callable):
     input_df_pandas = pd.DataFrame([
