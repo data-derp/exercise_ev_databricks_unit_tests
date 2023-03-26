@@ -860,6 +860,54 @@ def test_convert_metervalues_to_json_unit(spark, f: Callable):
 
     print("All tests passed! :)")
 
+def test_reshape_meter_values(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "AL1000",
+            "action": "MeterValues",
+            "body": '{"connector_id": 1, "meter_value": [{"timestamp": "2022-10-02T15:30:17.000345+00:00", "sampled_value": [{"value": "0.00", "context": "Sample.Periodic", "format": "Raw", "measurand": "Voltage", "phase": "L1-N", "location": "Outlet", "unit": "V"}, {"value": "13.17", "context": "Sample.Periodic", "format": "Raw", "measurand": "Current.Import", "phase": "L1", "location": "Outlet", "unit": "A"}, {"value": "3663.49", "context": "Sample.Periodic", "format": "Raw", "measurand": "Power.Active.Import", "phase": "L1", "location": "Outlet", "unit": "W"}, {"value": "238.65", "context": "Sample.Periodic", "format": "Raw", "measurand": "Voltage", "phase": "L2-N", "location": "Outlet", "unit": "V"}, {"value": "14.28", "context": "Sample.Periodic", "format": "Raw", "measurand": "Current.Import", "phase": "L2", "location": "Outlet", "unit": "A"}, {"value": "3086.46", "context": "Sample.Periodic", "format": "Raw", "measurand": "Power.Active.Import", "phase": "L2", "location": "Outlet", "unit": "W"}, {"value": "215.21", "context": "Sample.Periodic", "format": "Raw", "measurand": "Voltage", "phase": "L3-N", "location": "Outlet", "unit": "V"}, {"value": "14.63", "context": "Sample.Periodic", "format": "Raw", "measurand": "Current.Import", "phase": "L3", "location": "Outlet", "unit": "A"}, {"value": "4014.47", "context": "Sample.Periodic", "format": "Raw", "measurand": "Power.Active.Import", "phase": "L3", "location": "Outlet", "unit": "W"}, {"value": "254.65", "context": "Sample.Periodic", "format": "Raw", "measurand": "Voltage", "phase": null, "location": "Outlet", "unit": "Wh"}, {"value": "11.68", "context": "Sample.Periodic", "format": "Raw", "measurand": "Voltage", "phase": "L1-N", "location": "Outlet", "unit": "V"}, {"value": "3340.61", "context": "Sample.Periodic", "format": "Raw", "measurand": "Current.Import", "phase": "L1", "location": "Outlet", "unit": "A"}, {"value": "7719.95", "context": "Sample.Periodic", "format": "Raw", "measurand": "Power.Active.Import", "phase": "L1", "location": "Outlet", "unit": "W"}, {"value": "0.00", "context": "Sample.Periodic", "format": "Raw", "measurand": "Voltage", "phase": "L2-N", "location": "Outlet", "unit": "V"}, {"value": "3.72", "context": "Sample.Periodic", "format": "Raw", "measurand": "Current.Import", "phase": "L2", "location": "Outlet", "unit": "A"}, {"value": "783.17", "context": "Sample.Periodic", "format": "Raw", "measurand": "Power.Active.Import", "phase": "L2", "location": "Outlet", "unit": "W"}, {"value": "242.41", "context": "Sample.Periodic", "format": "Raw", "measurand": "Voltage", "phase": "L3-N", "location": "Outlet", "unit": "V"}, {"value": "3.46", "context": "Sample.Periodic", "format": "Raw", "measurand": "Current.Import", "phase": "L3", "location": "Outlet", "unit": "A"}, {"value": "931.52", "context": "Sample.Periodic", "format": "Raw", "measurand": "Power.Active.Import", "phase": "L3", "location": "Outlet", "unit": "W"}, {"value": "1330", "context": "Sample.Periodic", "format": "Raw", "measurand": "Power.Active.Import", "phase": null, "location": "Outlet", "unit": "W"},{"value": "7.26", "context": "Sample.Periodic", "format": "Raw", "measurand": "Energy.Active.Import.Register", "phase": null, "location": "Outlet", "unit": "Wh"}]}], "transaction_id": 1}'
+        }
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType(), True),
+            StructField("action", StringType(), True),
+            StructField("body", StringType(), True),
+        ])
+    )
+
+    body_schema = StructType([
+            StructField("connector_id", IntegerType(), True),
+            StructField("transaction_id", IntegerType(), True),
+            StructField("meter_value", ArrayType(StructType([
+                StructField("timestamp", StringType(), True),
+                StructField("sampled_value", ArrayType(StructType([
+                    StructField("value", StringType(), True),
+                    StructField("context", StringType(), True),
+                    StructField("format", StringType(), True),
+                    StructField("measurand", StringType(), True),
+                    StructField("phase", StringType(), True),
+                    StructField("unit", StringType(), True)]), True), True)]), True), True)])
+
+    input_df = input_df.withColumn("new_body", from_json(col("body"), body_schema))
+    result = input_df.transform(reshape_meter_values)
+    print("Transformed DF:")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 21
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_columns = set(result.columns)
+    expected_columns = set(["transaction_id", "timestamp", "measurand", "phase", "value"])
+    assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
+
+    result_value = [x.value for x in result.collect()]
+    expected_value = [0.0, 13.17, 3663.49, 238.65, 14.28, 3086.46, 215.21, 14.63, 4014.47, 254.65, 11.68, 3340.61, 7719.95, 0.0, 3.72, 783.17, 242.41, 3.46, 931.52, 1330.0, 7.26]
+    assert result_value == expected_value, f"Expected {expected_value}, but got {result_value}"
+
 
 def test_flatten_metervalues_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
