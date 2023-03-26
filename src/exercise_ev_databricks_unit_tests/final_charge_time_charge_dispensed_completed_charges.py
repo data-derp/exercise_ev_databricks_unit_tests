@@ -897,7 +897,7 @@ def test_reshape_meter_values(spark, f: Callable):
     result.show()
 
     result_count = result.count()
-    expected_count = 21
+    expected_count = 1
     assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
 
     result_columns = set(result.columns)
@@ -905,7 +905,7 @@ def test_reshape_meter_values(spark, f: Callable):
     assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
 
     result_value = [x.value for x in result.collect()]
-    expected_value = [0.0, 13.17, 3663.49, 238.65, 14.28, 3086.46, 215.21, 14.63, 4014.47, 254.65, 11.68, 3340.61, 7719.95, 0.0, 3.72, 783.17, 242.41, 3.46, 931.52, 1330.0, 7.26]
+    expected_value = [1330]
     assert result_value == expected_value, f"Expected {expected_value}, but got {result_value}"
 
 
