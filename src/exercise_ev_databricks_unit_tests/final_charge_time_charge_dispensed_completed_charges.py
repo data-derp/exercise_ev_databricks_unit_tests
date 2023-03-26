@@ -1209,6 +1209,8 @@ def test_cleanup_columns_unit(spark, f: Callable):
     ])
     assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
+    print("All tests pass! :)")
+
 
 def test_flatten_metervalues_json_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
