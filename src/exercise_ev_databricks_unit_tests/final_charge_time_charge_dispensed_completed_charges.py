@@ -892,7 +892,7 @@ def test_reshape_meter_values(spark, f: Callable):
                     StructField("unit", StringType(), True)]), True), True)]), True), True)])
 
     input_df = input_df.withColumn("new_body", from_json(col("body"), body_schema))
-    result = input_df.transform(reshape_meter_values)
+    result = input_df.transform(f)
     print("Transformed DF:")
     result.show()
 
