@@ -2,7 +2,7 @@ from typing import Callable, Any, List
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, ArrayType, TimestampType
 import pandas as pd
 import json
-from pyspark.sql.functions import col, from_json
+from pyspark.sql.functions import col, from_json, to_timestamp
 from pyspark.sql import DataFrame
 from datetime import datetime
 from pandas import Timestamp
@@ -136,7 +136,7 @@ def test_convert_stop_transaction_json_e2e(input_df, **kwargs):
                               "new_body"]
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
-    result_sub = result.limit(3)
+    result_sub = result.withColumn("converted_timestamp", to_timestamp("new_body.timestamp")).sort(col("converted_timestamp")).drop("converted_timestamp").limit(3)
 
     meter_stop = [x.meter_stop for x in result_sub.select(col("new_body.meter_stop")).collect()]
     expected_meter_stop = [51219, 31374, 50781]
@@ -238,7 +238,7 @@ def test_convert_start_transaction_response_json_e2e(input_df: DataFrame, displa
                               "new_body"]
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
-    result_sub = result.limit(3)
+    result_sub = result.sort(col("new_body.transaction_id")).limit(3)
 
     def assert_expected_json_value(json_path: str, expected_values: List[Any]):
         values = [getattr(x, json_path.split(".")[-1]) for x in result_sub.select(col(json_path)).collect()]
@@ -442,7 +442,7 @@ def test_convert_start_transaction_request_json_e2e(input_df: DataFrame, display
                               "new_body"]
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
-    result_sub = result.limit(3)
+    result_sub = result.withColumn("converted_timestamp", to_timestamp("new_body.timestamp")).drop("converted_timestamp").limit(3)
 
     def assert_expected_json_value(json_path: str, expected_values: List[Any]):
         values = [getattr(x, json_path.split(".")[-1]) for x in result_sub.select(col(json_path)).collect()]
@@ -549,7 +549,7 @@ def test_join_stop_with_start_e2e(input_df: DataFrame, display_f: Callable, **kw
                                    "stop_timestamp"}
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
-    result_sub = result.limit(3)
+    result_sub = result.sort(col("transaction_id")).limit(3)
 
     def assert_expected_value(column: str, expected_values: List[Any]):
         values = [getattr(x, column) for x in result_sub.select(col(column)).collect()]
