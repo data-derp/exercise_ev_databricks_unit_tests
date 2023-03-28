@@ -416,7 +416,7 @@ def test_join_with_start_transaction_request_e2e(input_df: DataFrame, display_f:
     assert result.columns == ["charge_point_id", "transaction_id", "meter_start", "start_timestamp"]
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
-    result_sub = result.limit(3)
+    result_sub = result.sort(col("transaction_id")).limit(3)
 
     def assert_expected_value(column: str, expected_values: List[Any]):
         values = [getattr(x, column) for x in result_sub.select(col(column)).collect()]
