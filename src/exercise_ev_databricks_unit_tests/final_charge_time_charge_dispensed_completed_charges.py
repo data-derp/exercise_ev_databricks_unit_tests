@@ -550,21 +550,20 @@ def test_join_stop_with_start_e2e(input_df: DataFrame, display_f: Callable, **kw
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
     result_sub = result.sort(col("transaction_id")).limit(3)
+    print("Reordered DF under test:")
+    display_f(result_sub)
 
     def assert_expected_value(column: str, expected_values: List[Any]):
         values = [getattr(x, column) for x in result_sub.select(col(column)).collect()]
-        assert values == expected_values, f"expected {expected_values}, but got {values}"
+        assert values == expected_values, f"expected {expected_values} in column {column}, but got {values}"
 
     assert_expected_value("charge_point_id",
-                          ['01a0f039-7685-4a7f-9ef6-8d262a7898fb', '7af0d94b-e864-4ffd-9c30-8970831f3870',
-                           'c2e32e4a-4387-4cd4-bb40-dde977bc56b1'])
-    assert_expected_value("transaction_id", [1, 5, 7])
+                          ['01a0f039-7685-4a7f-9ef6-8d262a7898fb', '3e365f3f-6e30-43d3-b897-d6291a9f7c35', '77b7feb3-7f8f-4faf-86c6-d725e70e8c7f'])
+    assert_expected_value("transaction_id", [1, 2, 3])
     assert_expected_value("meter_start", [0, 0, 0])
-    assert_expected_value("meter_start", [0, 0, 0])
-    assert_expected_value("start_timestamp", ['2023-01-01T12:54:04.750286+00:00', '2023-01-01T15:20:29.693922+00:00',
-                                              '2023-01-01T17:48:01.776488+00:00'])
-    assert_expected_value("stop_timestamp", ['2023-01-01T17:11:31.399112+00:00', '2023-01-01T17:48:30.073819+00:00',
-                                             '2023-01-01T20:57:10.917742+00:00'])
+    assert_expected_value("meter_stop", [51219, 146616, 151794])
+    assert_expected_value("start_timestamp", ['2023-01-01T12:54:04.750286+00:00', '2023-01-01T12:57:35.483812+00:00', '2023-01-01T13:48:12.471750+00:00'])
+    assert_expected_value("stop_timestamp", ['2023-01-01T17:11:31.399112+00:00', '2023-01-01T22:21:00.811842+00:00', '2023-01-01T21:41:39.731897+00:00'])
 
     print("All tests pass! :)")
 
