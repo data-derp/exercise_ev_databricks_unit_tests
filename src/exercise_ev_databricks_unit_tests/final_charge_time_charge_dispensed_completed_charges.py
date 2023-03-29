@@ -126,7 +126,7 @@ def test_convert_stop_transaction_unit(spark, f: Callable):
     print("All tests pass! :)")
 
 
-def test_convert_stop_transaction_json_e2e(input_df, **kwargs):
+def test_convert_stop_transaction_json_e2e(input_df, display_f: Callable, **kwargs):
     result = input_df
 
     print("Transformed DF:")
@@ -137,6 +137,8 @@ def test_convert_stop_transaction_json_e2e(input_df, **kwargs):
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
     result_sub = result.withColumn("converted_timestamp", to_timestamp("new_body.timestamp")).sort(col("converted_timestamp")).drop("converted_timestamp").limit(3)
+    print("Reordered DF under test:")
+    display_f(result_sub)
 
     meter_stop = [x.meter_stop for x in result_sub.select(col("new_body.meter_stop")).collect()]
     expected_meter_stop = [51219, 31374, 50781]
@@ -239,6 +241,8 @@ def test_convert_start_transaction_response_json_e2e(input_df: DataFrame, displa
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
     result_sub = result.sort(col("new_body.transaction_id")).limit(3)
+    print("Reordered DF under test:")
+    display_f(result_sub)
 
     def assert_expected_json_value(json_path: str, expected_values: List[Any]):
         values = [getattr(x, json_path.split(".")[-1]) for x in result_sub.select(col(json_path)).collect()]
@@ -417,6 +421,8 @@ def test_join_with_start_transaction_request_e2e(input_df: DataFrame, display_f:
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
     result_sub = result.sort(col("transaction_id")).limit(3)
+    print("Reordered DF under test:")
+    display_f(result_sub)
 
     def assert_expected_value(column: str, expected_values: List[Any]):
         values = [getattr(x, column) for x in result_sub.select(col(column)).collect()]
@@ -443,6 +449,8 @@ def test_convert_start_transaction_request_json_e2e(input_df: DataFrame, display
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
     result_sub = result.withColumn("converted_timestamp", to_timestamp("new_body.timestamp")).drop("converted_timestamp").limit(3)
+    print("Reordered DF under test:")
+    display_f(result_sub)
 
     def assert_expected_json_value(json_path: str, expected_values: List[Any]):
         values = [getattr(x, json_path.split(".")[-1]) for x in result_sub.select(col(json_path)).collect()]
