@@ -632,3 +632,15 @@ def test_join_and_shape_df_e2e(input_df: DataFrame, display_f: Callable, **kwarg
     assert result_total_parking_time == expected_total_parking_time, f"Expected {expected_total_parking_time}, but got {result_total_parking_time}"
 
     print("All tests pass!")
+
+
+def test_write_to_parquet(spark, dbutils, out_dir):
+    df = spark.createDataFrame(dbutils.fs.ls(f"{out_dir}/cdr"))
+    df.show()
+    snappy_parquet_count = df.filter(col("name").endswith(".snappy.parquet")).count()
+    assert snappy_parquet_count == 1, f"Expected 1 .snappy.parquet file, but got {snappy_parquet_count}"
+
+    success_count = df.filter(col("name") == "_SUCCESS").count()
+    assert success_count == 1, f"Expected 1 _SUCCESS file, but got {success_count}"
+
+    print("All tests pass! :)")
