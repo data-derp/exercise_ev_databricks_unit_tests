@@ -90,7 +90,7 @@ def test_match_start_transaction_requests_with_responses_e2e(input_df, display_f
         StructField('charge_point_id', StringType(), True),
         StructField('transaction_id', IntegerType(), True),
         StructField('meter_start', IntegerType(), True),
-        StructField('start_timestamp', StringType(), True)
+        StructField('start_timestamp', TimestampType(), True)
     ])
     assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
