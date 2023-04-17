@@ -279,6 +279,100 @@ def test_start_transaction_request_flatten_e2e(input_df: DataFrame, spark, displ
     print("All tests pass! :)")
 
 
+from typing import Callable
+import pandas as pd
+from dateutil import parser
+from datetime import datetime
+
+
+def test_start_transaction_request_cast_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "action": "StartTransaction",
+            "message_type": 2,
+            "charge_point_id": "123",
+            "connector_id": 1,
+            "id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
+            "meter_start": 0,
+            "timestamp": "2022-01-01T08:00:00+00:00",
+            "reservation_id": None
+        },
+
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField('action', StringType(), True),
+            StructField('message_type', IntegerType(), True),
+            StructField('charge_point_id', StringType(), True),
+            StructField('connector_id', IntegerType(), True),
+            StructField('id_tag', StringType(), True),
+            StructField('meter_start', IntegerType(), True),
+            StructField('timestamp', StringType(), True),
+            StructField('reservation_id', IntegerType(), True)
+        ])
+    )
+
+    result = input_df.transform(f)
+    print("Transformed DF")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 1
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('action', StringType(), True),
+        StructField('message_type', IntegerType(), True),
+        StructField('charge_point_id', StringType(), True),
+        StructField('connector_id', IntegerType(), True),
+        StructField('id_tag', StringType(), True),
+        StructField('meter_start', IntegerType(), True),
+        StructField('timestamp', TimestampType(), True),
+        StructField('reservation_id', IntegerType(), True)
+    ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+
+    result_data = [x.timestamp for x in result.collect()]
+    expected_data = [datetime(2022, 1, 1, 8, 0)]
+    assert result_data == expected_data, f"Expected {expected_data}, but got {result_data}"
+
+    print("All tests pass! :)")
+
+def test_start_transaction_request_cast_e2e(input_df: DataFrame, spark, display_f, **kwargs):
+    result = input_df
+
+    print("Transformed DF")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 2599
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('message_id', StringType(), True),
+        StructField('message_type', IntegerType(), True),
+        StructField('charge_point_id', StringType(), True),
+        StructField('action', StringType(), True),
+        StructField('write_timestamp', StringType(), True),
+        StructField('connector_id', IntegerType(), True),
+        StructField('id_tag', StringType(), True),
+        StructField('meter_start', IntegerType(), True),
+        StructField('timestamp', TimestampType(), True),
+        StructField('reservation_id', IntegerType(), True)
+    ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+
+    result_data = [x.timestamp for x in result.sort(col("timestamp")).limit(3).collect()]
+    expected_data = [datetime(2023, 1, 1, 10, 43, 9, 900215), datetime(2023, 1, 1, 11, 20, 31, 296429), datetime(2023, 1, 1, 14, 3, 42, 294160)]
+    assert result_data == expected_data, f"Expected {expected_data}, but got {result_data}"
+
+    print("All tests pass! :)")
+
+
 def test_start_transaction_response_filter_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
@@ -833,6 +927,107 @@ def test_stop_transaction_request_flatten_e2e(input_df: DataFrame, spark, displa
     print("All tests pass! :)")
 
 
+def test_stop_transaction_request_cast_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "action": "StopTransaction",
+            "message_type": 2,
+            "charge_point_id": "123",
+            "meter_stop": 2780,
+            "timestamp": "2022-01-01T08:20:00+00:00",
+            "transaction_id": 1,
+            "reason": None,
+            "id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
+            "transaction_data": None
+        },
+        {
+            "action": "StartTransaction",
+            "message_type": 2,
+            "charge_point_id": "123",
+            "meter_stop": 5000,
+            "timestamp": "2022-01-01T09:20:00+00:00",
+            "transaction_id": 1,
+            "reason": None,
+            "id_tag": "25b72fa9-85fd-4a75-acbe-5a15fc7430a8",
+            "transaction_data": None
+        },
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("action", StringType()),
+            StructField("message_type", IntegerType()),
+            StructField("charge_point_id", StringType()),
+            StructField('meter_stop', IntegerType(), True),
+            StructField('timestamp', StringType(), True),
+            StructField('transaction_id', IntegerType(), True),
+            StructField('reason', StringType(), True),
+            StructField('id_tag', StringType(), True),
+            StructField('transaction_data', ArrayType(StringType(), True), True)
+        ])
+    )
+
+    result = input_df.transform(f)
+    print("Transformed DF")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 2
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('action', StringType(), True),
+        StructField('message_type', IntegerType(), True),
+        StructField('charge_point_id', StringType(), True),
+        StructField('meter_stop', IntegerType(), True),
+        StructField('timestamp', TimestampType(), True),
+        StructField('transaction_id', IntegerType(), True),
+        StructField('reason', StringType(), True),
+        StructField('id_tag', StringType(), True),
+        StructField('transaction_data', ArrayType(StringType(), True), True)
+    ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+
+    result_data = [x.timestamp for x in result.collect()]
+    expected_data = [datetime(2022, 1, 1, 8, 20), datetime(2022, 1, 1, 9, 20)]
+    assert result_data == expected_data, f"Expected {expected_data}, but got {result_data}"
+
+    print("All tests pass! :)")
+
+
+def test_stop_transaction_request_cast_e2e(input_df: DataFrame, spark, display_f, **kwargs):
+    result = input_df
+
+    print("Transformed DF")
+    result.show()
+
+    result_count = result.count()
+    expected_count = 2599
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    result_schema = result.schema
+    expected_schema = StructType([
+        StructField('message_id', StringType(), True),
+        StructField('message_type', IntegerType(), True),
+        StructField('charge_point_id', StringType(), True),
+        StructField('action', StringType(), True),
+        StructField('write_timestamp', StringType(), True),
+        StructField('meter_stop', IntegerType(), True),
+        StructField('timestamp', TimestampType(), True),
+        StructField('transaction_id', IntegerType(), True),
+        StructField('reason', StringType(), True),
+        StructField('id_tag', StringType(), True),
+        StructField('transaction_data', ArrayType(StringType(), True), True)
+    ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+
+    result_data = [x.timestamp for x in result.sort(col("timestamp")).limit(3).collect()]
+    expected_data = [datetime(2023, 1, 1, 17, 56, 55, 669396), datetime(2023, 1, 1, 18, 31, 34, 833396), datetime(2023, 1, 1, 19, 10, 1, 568021)]
+    assert result_data == expected_data, f"Expected {expected_data}, but got {result_data}"
+
+    print("All tests pass! :)")
 def test_meter_values_request_filter_unit(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
