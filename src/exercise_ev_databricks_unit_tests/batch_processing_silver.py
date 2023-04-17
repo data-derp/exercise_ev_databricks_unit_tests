@@ -264,7 +264,7 @@ def test_start_transaction_request_flatten_e2e(input_df: DataFrame, spark, displ
         StructField('action', StringType(), True),
         StructField('write_timestamp', StringType(), True),
         StructField('connector_id', IntegerType(), True),
-        StructField('id_tag', IntegerType(), True),
+        StructField('id_tag', StringType(), True),
         StructField('meter_start', IntegerType(), True),
         StructField('timestamp', StringType(), True),
         StructField('reservation_id', IntegerType(), True)
@@ -1050,6 +1050,7 @@ def test_meter_values_request_flatten_unit(spark, f: Callable):
         StructField('action', StringType(), True),
         StructField('write_timestamp', StringType(), True),
         StructField('transaction_id', IntegerType(), True),
+        StructField('connector_id', IntegerType(), True),
         StructField('timestamp', TimestampType(), True),
         StructField('measurand', StringType(), True),
         StructField('phase', StringType(), True),
