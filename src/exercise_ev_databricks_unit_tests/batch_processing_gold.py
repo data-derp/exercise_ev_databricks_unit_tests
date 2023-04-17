@@ -193,7 +193,7 @@ def test_join_with_start_transaction_responses_e2e(input_df: DataFrame, display_
     assert_expected_value("meter_start", [0, 0, 0])
     assert_expected_value("meter_stop", [95306, 78106, 149223])
     assert_expected_value("start_timestamp",  [datetime(2023, 1, 1, 10, 43, 9, 900215), datetime(2023, 1, 1, 11, 20, 31, 296429), datetime(2023, 1, 1, 14, 3, 42, 294160)])
-    assert_expected_value("stop_timestamp", ['2023-01-01T18:31:34.833396+00:00', '2023-01-01T17:56:55.669396+00:00', '2023-01-01T23:19:26.063351+00:00'])
+    assert_expected_value("stop_timestamp", [datetime(2023, 1, 1, 18, 31, 34, 833396), datetime(2023, 1, 1, 17, 56, 55, 669396), datetime(2023, 1, 1, 23, 19, 26, 63351)])
 
     print("All tests pass! :)")
 
