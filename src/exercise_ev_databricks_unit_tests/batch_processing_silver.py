@@ -232,7 +232,7 @@ def test_start_transaction_request_flatten_unit(spark, f: Callable):
         StructField('message_type', IntegerType(), True),
         StructField('charge_point_id', StringType(), True),
         StructField('connector_id', IntegerType(), True),
-        StructField('id_tag', IntegerType(), True),
+        StructField('id_tag', StringType(), True),
         StructField('meter_start', IntegerType(), True),
         StructField('timestamp', StringType(), True),
         StructField('reservation_id', IntegerType(), True)
