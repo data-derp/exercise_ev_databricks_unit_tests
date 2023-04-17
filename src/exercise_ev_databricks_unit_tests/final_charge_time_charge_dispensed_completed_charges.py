@@ -1086,8 +1086,6 @@ def test_calculate_total_parking_time_unit(spark, f: Callable):
     expected_count = 2
     assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
 
-    print("All tests pass! :)")
-
     def assert_expected_value(df: DataFrame, column_name: str, expected_values: List[Any]):
         r = [getattr(x, column_name) for x in df.collect()]
         assert r == expected_values, f"Expected {expected_values}, but got {r}"
@@ -1102,6 +1100,7 @@ def test_calculate_total_parking_time_unit(spark, f: Callable):
     ])
     assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
+    print("All tests pass! :)")
 
 
 def test_calculate_total_parking_time_e2e(input_df: DataFrame, display_f: Callable, **kwargs):
