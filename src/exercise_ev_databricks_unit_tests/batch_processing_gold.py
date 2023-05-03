@@ -322,12 +322,12 @@ def test_calculate_total_energy_unit(spark, f: Callable):
         "start_timestamp": Timestamp('2023-01-01 08:00:00.000000'),
         "stop_timestamp": Timestamp('2023-01-01 09:00:00.000000'),
         "total_time": 1.0,
-        "total_energy": 1000.0
+        "total_energy": 1.0
     }]
     assert result_values == expected_values, f"expected {expected_values}, but got {result_values}"
 
     result_total_energy = [x.total_energy for x in result.collect()]
-    expect_total_energy = [1000.0]
+    expect_total_energy = [1.0]
     assert result_total_energy == expect_total_energy, f"expected {expect_total_energy}, but got {result_total_energy}"
 
     print("All tests pass! :)")
@@ -357,7 +357,7 @@ def test_calculate_total_energy_e2e(input_df: DataFrame, display_f: Callable, **
     assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
     result_ordered = result.sort(col("transaction_id"))
     result_total_energy = [x.total_energy for x in result_ordered.limit(3).collect()]
-    expected_total_energy = [95306.0, 78106.0, 149223.0]
+    expected_total_energy = [95.31, 78.11, 149.22]
     assert result_total_energy == expected_total_energy, f"expected {expected_total_energy}, but got {result_total_energy}"
     print("All tests passed! :)")
 
