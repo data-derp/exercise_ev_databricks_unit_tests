@@ -1,7 +1,8 @@
 from typing import Callable
-from pyspark.sql.types import StringType, StructField, StructType, LongType, IntegerType
+from pyspark.sql.types import StringType, StructField, StructType, LongType, IntegerType, TimestampType
 import pandas as pd
 import json
+import datetime
 
 
 def test_read_from_stream(spark, f: Callable):
@@ -115,4 +116,56 @@ def test_unpack_json_from_status_notification_request_unit(spark, f: Callable):
         ])
     assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
+    print("All tests pass! :)")
+
+def test_select_columns_unit(spark, f: Callable):
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "430ca2a2-54a6-4247-9adf-d86300231c62",
+            "new_body": json.dumps({"status": "SuspendedEV", "timestamp":  "2023-01-01T09:00:00.000+0000"})
+        },
+         {
+            "charge_point_id": "f3cf5e5a-701e-410a-9739-b00cda3f082c",
+            "new_body": json.dumps({"status": "Faulted", "timestamp":  "2023-01-01T09:00:00.000+0000"})
+        }
+    ])
+
+    body_schema = StructType([
+            StructField("status", StringType(),True),
+            StructField("timestamp", StringType(),True)
+
+        ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("new_body", StringType())
+        ])
+    ).withColumn("new_body", from_json("new_body", body_schema))
+
+    result = input_df.transform(f)
+    print("Transformed DF")
+    result.show(truncate=False)
+
+    #Test # 1
+    result_count = result.count()
+    expected_count = 2
+    assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+    #Test # 2
+    result_data = [(x.charge_point_id, x.status, x.timestamp) for x in result.collect()]
+    expected_data = [("430ca2a2-54a6-4247-9adf-d86300231c62", "SuspendedEV", datetime.datetime(2023, 1, 1, 9, 0)), ("f3cf5e5a-701e-410a-9739-b00cda3f082c", "Faulted", datetime.datetime(2023, 1, 1, 9, 0))]
+    assert result_data == expected_data, f"Expected {expected_data}, but got {result_data}"
+
+    #Test # 3
+    result_schema = result.schema
+    expected_schema = StructType(
+        [
+            StructField("charge_point_id", StringType(),True),
+            StructField("status", StringType(),True),
+            StructField("timestamp", TimestampType(),True)
+        ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+    
     print("All tests pass! :)")
