@@ -3,6 +3,7 @@ from pyspark.sql.types import StringType, StructField, StructType, LongType, Int
 import pandas as pd
 import json
 import datetime
+from pyspark.sql.functions import from_json, col
 
 
 def test_read_from_stream(spark, f: Callable):
