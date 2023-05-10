@@ -3,7 +3,7 @@ from pyspark.sql.types import StringType, StructField, StructType, LongType, Int
 import pandas as pd
 import json
 import datetime
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, to_timestamp
 
 
 def test_read_from_stream(spark, f: Callable):
@@ -169,4 +169,66 @@ def test_select_columns_unit(spark, f: Callable):
         ])
     assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
     
+    print("All tests pass! :)")
+
+def test_aggregate_window_watermark_unit(spark, f: Callable):
+    
+    input_pandas = pd.DataFrame([
+        {
+            "charge_point_id": "444984d5-0b9c-474e-a972-71347941ae0e",
+            "status": "Reserved",
+            "timestamp": "2023-01-01T09:25:00.000+0000",
+        },
+        {
+            "charge_point_id": "444984d5-0b9c-474e-a972-71347941ae0e",
+            "status": "Reserved",
+            "timestamp": "2022-01-01T09:25:00.000+0000",
+        },   
+    ])
+
+    input_df = spark.createDataFrame(
+        input_pandas,
+        StructType([
+            StructField("charge_point_id", StringType()),
+            StructField("status", StringType()),
+            StructField("timestamp", StringType())
+        ])
+    ).withColumn("timestamp", to_timestamp("timestamp"))
+
+    print("-->Input Schema")
+    input_df.printSchema()
+
+    result = input_df.transform(f)
+    # result = (input_df.transform(f).output("update")) #I have also seen this weird parenthesis execution for streaming
+    # result = input_df.transform(f).output("update") #Syed can you check this?
+    print("Transformed DF")
+
+    print("-->Result Schema")
+    result.printSchema()
+
+    # Schema Shape Test 
+    result_schema = result.schema
+    expected_schema = StructType(
+        [
+            StructField("charge_point_id", StringType(),True),
+            StructField("status", StringType(),True),
+            StructField("window", StructType([
+                StructField("start", TimestampType(),True),
+                StructField("end", TimestampType(),True)
+            ]),False),
+            StructField("count(status)", LongType(),False),
+        ])
+    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+
+    # result_records = [(x.charge_point_id, x.status, x.window.start, x.window.end) for x in result.collect()]
+    # expected_records = [
+    #     ("444984d5-0b9c-474e-a972-71347941ae0e", "Reserved", datetime.datetime(2023, 1, 1, 9, 25), datetime.datetime(2023, 1, 1, 9, 30))
+    # ]
+    # assert result_records == expected_records, f"Expected {expected_records}, but got {result_records}"
+
+    # result_count = result.count()
+    # expected_count = 1
+    # assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
+
+
     print("All tests pass! :)")
