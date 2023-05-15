@@ -3,7 +3,7 @@ from pyspark.sql.types import StringType, StructField, StructType, LongType, Int
 import pandas as pd
 import json
 import datetime
-from pyspark.sql.functions import from_json, to_timestamp
+from pyspark.sql.functions import from_json, to_timestamp , col
 
 
 def test_read_from_stream(spark, f: Callable):
@@ -230,5 +230,25 @@ def test_aggregate_window_watermark_unit(spark, f: Callable):
     # expected_count = 1
     # assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
 
+
+    print("All tests pass! :)")
+
+def test_write_e2e(spark, dbutils, out_dir):
+    final_files_df = spark.createDataFrame(dbutils.fs.ls(out_dir))
+    # final_files_df.show()
+
+    # Test 1 - check that at least one parquet file exists
+    snappy_parquet_count = final_files_df.filter(col("name").endswith(".snappy.parquet")).count()
+    # print(snappy_parquet_count)
+    assert snappy_parquet_count >= 1, f"Expected 1 .snappy.parquet file, but got {snappy_parquet_count}"
+
+    # Test 2 - check the shape of schema
+    paths = [x.path for x in final_files_df.filter(col("name").endswith(".snappy.parquet")).limit(1).collect()] # => just 1 anyway
+
+    result_columns = spark.read.parquet(paths[0]).columns
+    print(result_columns)
+    expected_columns = ['charge_point_id', 'status', 'window', 'count(status)']
+
+    assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
 
     print("All tests pass! :)")
