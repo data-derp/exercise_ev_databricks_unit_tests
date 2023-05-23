@@ -12,7 +12,7 @@ pip install git+https://github.com/data-derp/exercise_ev_databricks_unit_tests#e
 
 ```text
 package-one==0.1.0
-pip install git+https://github.com/data-derp/exercise_ev_databricks_unit_tests
+exercise_ev_databricks_unit_tests @ git+https://github.com/data-derp/exercise_ev_databricks_unit_tests
 package-three==0.3.0
 ```
 
