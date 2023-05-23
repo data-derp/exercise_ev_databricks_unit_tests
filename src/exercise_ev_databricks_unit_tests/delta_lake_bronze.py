@@ -70,3 +70,12 @@ def test_set_partitioning_cols_unit(spark, f: Callable):
     assert result_data == expected_data, f"expected {expected_data}, but got {result_data}"
 
     print("All tests pass! :)")
+
+
+def test_files_exist_e2e(spark, **kwargs):
+    result = spark.createDataFrame(kwargs['dbutils'].fs.ls(f"{kwargs['out_dir']}/year=2023/month=1/day=1/hour=9/minute=2"))
+    result_count = result.count()
+    expected_count = 2
+    assert result_count == expected_count, f"expected {expected_count}, but got {result_count}"
+
+    print("All tests pass! :)")
