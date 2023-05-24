@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
+
 from dateutil import parser
 from typing import Callable
 import pandas as pd
+from pyspark.sql import DataFrame
 from pyspark.sql.types import LongType, StructField, StructType, IntegerType, StringType
 
 
@@ -121,5 +124,24 @@ def test_set_partitioning_cols_unit(spark, f: Callable):
         StructField('day', IntegerType(), True)
     ])
     assert result_schema == expected_schema, f"expected {expected_schema}, but got {result_schema}"
+
+    print("All tests pass! :)")
+
+def test_read_delta_from_last_minute_e2e(input_df: DataFrame, **kwargs):
+    result = input_df
+    result.show()
+    result.repartition(1)
+    result_count = result.count()
+    expected_count = 1
+    assert result_count >= expected_count, f"expected >= {expected_count}, but got {result_count}"
+
+def test_event_log_files_exist_e2e(spark, **kwargs):
+    time_under_test = datetime.now(tz=timezone.utc)
+    path = f"{kwargs['out_dir']}/charge_point_id=5d3706d3-5866-4f52-a52c-5efca5fbb312/year={time_under_test.year}/month={time_under_test.month}/day={time_under_test.day}"
+    print(f"Checking path: {path}")
+    result = spark.createDataFrame(kwargs['dbutils'].fs.ls(path))
+    result_count = result.count()
+    expected_count = 0
+    assert result_count > 0, f"expected > {expected_count}, but got {result_count}"
 
     print("All tests pass! :)")
