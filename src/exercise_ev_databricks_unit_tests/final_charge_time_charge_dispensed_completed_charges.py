@@ -334,6 +334,18 @@ def test_join_with_start_transaction_request_unit(spark, f: Callable):
                 }
             })
         },
+        {
+            "charge_point_id": "123",
+            "message_id": "234",
+            "body": json.dumps({
+                "transaction_id": 2,
+                "id_tag_info": {
+                    "status": "Accepted",
+                    "parent_id_tag": "ea068c10-1bfb-4128-ab88-de565bd5f02f",
+                    "expiry_date": None
+                }
+            })
+        },
     ])
 
     input_start_transaction_response_df = spark.createDataFrame(
@@ -398,7 +410,7 @@ def test_join_with_start_transaction_request_unit(spark, f: Callable):
     result.show()
 
     result_count = result.count()
-    assert result_count == 1
+    assert result_count == 1, f"expected 1, but got {result_count}. Did you use the right join?"
     result_schema = result.schema
     expected_schema = StructType([
         StructField('charge_point_id', StringType(), True),
