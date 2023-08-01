@@ -460,7 +460,8 @@ def test_convert_start_transaction_request_json_e2e(input_df: DataFrame, display
                               "new_body"]
     assert result.count() == 95, f"expected 95, but got {result.count()}"
 
-    result_sub = result.withColumn("converted_timestamp", to_timestamp("new_body.timestamp")).drop("converted_timestamp").limit(3)
+    result_sub = result.withColumn("converted_timestamp", to_timestamp("new_body.timestamp")).sort(
+        col("converted_timestamp")).drop("converted_timestamp").limit(3)
     print("Reordered DF under test:")
     display_f(result_sub)
 
@@ -1131,7 +1132,9 @@ def test_calculate_total_parking_time_e2e(input_df: DataFrame, display_f: Callab
     ])
     assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
-    result_total_parking_time = [x.total_parking_time for x in result.collect()]
+    result_sub = result.sort(col("transaction_id"))
+
+    result_total_parking_time = [x.total_parking_time for x in result_sub.collect()]
     expected_total_parking_time = [1.0, 1.75, 0.25, 1.0, 0.67, 1.25, 0.42, 0.33, 0.75, 0.58, 1.42, 1.42, 0.75, 0.75, 0.92, 0.92, 2.0, 1.33, 0.83, 1.92, 0.5, 2.83, 0.83, 1.08, 0.17, 1.67, 1.75, 1.33, 0.17, 0.75, 0.5, 0.92, 1.92, 0.42, 0.67, 0.5, 0.25, 1.67, 2.0, 0.83, 0.42, 0.58, 1.08, 1.25, 0.25, 1.33, 1.5, 2.0, 0.5, 1.0, 0.75, 1.25, 1.92, 0.75, 0.67, 0.42, 0.5, 1.17, 0.42, 2.25, 1.0, 1.58, 0.17, 0.75, 0.5, 1.08, 1.58, 1.33, 1.08, 0.25, 0.67, 1.33, 2.42, 1.08, 0.92, 1.42, 0.17, 1.58, 0.5, 1.33, 0.83, 0.83, 0.67, 0.75, 1.08, 1.25, 1.0, 1.0, 2.0, 0.92, 0.58, 0.42, 1.17, 0.75]
     assert result_total_parking_time == expected_total_parking_time, f"Expected {expected_total_parking_time}, but got {result_total_parking_time}"
 
