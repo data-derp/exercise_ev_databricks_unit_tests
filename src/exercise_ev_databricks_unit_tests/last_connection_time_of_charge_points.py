@@ -133,7 +133,7 @@ def test_most_recent_message_of_charge_point(spark, f: Callable):
     print("All tests pass! :)")
 
 
-def x_test_cleanup(spark, f: Callable):
+def test_cleanup(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
             "charge_point_id": "AL1000",
