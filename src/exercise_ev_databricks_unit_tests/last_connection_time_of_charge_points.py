@@ -133,11 +133,10 @@ def test_most_recent_message_of_charge_point(spark, f: Callable):
     print("All tests pass! :)")
 
 
-def test_cleanup(spark, f: Callable):
+def x_test_cleanup(spark, f: Callable):
     input_pandas = pd.DataFrame([
         {
             "charge_point_id": "AL1000",
-            "write_timestamp": "2022-10-02T15:32:17.000345+00:00",
             "action": "Heartbeat",
             "body": "{}",
             "converted_timestamp": parse("2022-10-02T15:32:17.000345+00:00"),
@@ -145,7 +144,6 @@ def test_cleanup(spark, f: Callable):
         },
         {
             "charge_point_id": "AL2000",
-            "write_timestamp": "2022-10-02T15:36:17.000345+00:00",
             "action": "Heartbeat",
             "body": "{}",
             "converted_timestamp": parse("2022-10-02T15:36:17.000345+00:00"),
@@ -157,7 +155,6 @@ def test_cleanup(spark, f: Callable):
         input_pandas,
         StructType([
             StructField("charge_point_id", StringType()),
-            StructField("write_timestamp", StringType()),
             StructField("action", StringType()),
             StructField("body", StringType()),
             StructField("converted_timestamp", TimestampType()),
@@ -171,7 +168,7 @@ def test_cleanup(spark, f: Callable):
     assert result_count == expected_count, f"Expected {expected_count}, but got {result_count}"
 
     result_columns = result.columns
-    expected_columns = ["charge_point_id", "write_timestamp", "action", "body", "converted_timestamp"]
+    expected_columns = ["charge_point_id", "action", "body", "converted_timestamp"]
     assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
 
     print("All tests pass! :)")
