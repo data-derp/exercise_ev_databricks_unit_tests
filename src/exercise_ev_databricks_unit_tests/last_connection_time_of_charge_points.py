@@ -210,7 +210,7 @@ def test_final(input_df: DataFrame):
     assert result_timestamp == expected_timestamp, f"Expected {expected_timestamp}, but got {result_timestamp}"
 
     result_columns = input_df.columns
-    expected_columns = ["message_id", "message_type", "charge_point_id", "action", "write_timestamp", "body",
+    expected_columns = ["message_id", "message_type", "charge_point_id", "action", "body",
                         "converted_timestamp"]
     assert result_columns == expected_columns, f"Expected {expected_columns}, but got {result_columns}"
     print("All tests pass! :)")
