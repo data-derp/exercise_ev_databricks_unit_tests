@@ -218,7 +218,21 @@ def test_aggregate_window_watermark_unit(spark, f: Callable):
             ]),False),
             StructField("count(status)", LongType(),False),
         ])
-    assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
+    # Starting with 13.3, some metadata is injected into the window schema, therefore we have to ignore that in our test.
+    def compare_schemas(actual, expected):
+        """Compare schemas ignoring metadata"""
+        if len(actual.fields) != len(expected.fields):
+            return False
+    
+        for actual_field, expected_field in zip(actual.fields, expected.fields):
+            if (actual_field.name != expected_field.name or 
+                actual_field.dataType != expected_field.dataType or 
+                actual_field.nullable != expected_field.nullable):
+                return False
+        return True
+    assert compare_schemas(result_schema, expected_schema), f"Expected {expected_schema}, but got {result_schema}"
+    # Old assertion using all fields:
+    #assert result_schema == expected_schema, f"Expected {expected_schema}, but got {result_schema}"
 
     # result_records = [(x.charge_point_id, x.status, x.window.start, x.window.end) for x in result.collect()]
     # expected_records = [
