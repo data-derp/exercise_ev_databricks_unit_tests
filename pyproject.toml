@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exercise-ev-databricks-unit-tests"
+version = "0.1.0"
+description = "EV calculation utilities with Databricks unit tests"
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [
+    { name = "data-derp" }
+]
+
+dependencies = [
+    "pandas>=1.5",
+    "numpy>=1.23",
+    "wget>=3.2"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
